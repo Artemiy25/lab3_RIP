@@ -10,19 +10,25 @@
 
 **ДО оптимизации:**
 
-![Allocations ДО](screenshots/before/before_alloc.png)
+![Allocations ДО](screenshots/before/method_profiling.png)
 *Высокая частота аллокаций ArrayList и Long объектов*
 
-![Memory ДО](screenshots/before/before_memory.png)
+![Memory ДО](screenshots/before/memory.png)
 *Большое потребление heap при обработке 10M чисел (~250 MB)*
+
+![Сборщик мусора ДО](screenshots/before/garbage_collection.png)
+*Большое потребление сборщика мусора*
 
 **ПОСЛЕ оптимизации:**
 
-![Allocations ПОСЛЕ](screenshots/after/after_alloc.png)
+![Allocations ПОСЛЕ](screenshots/after/method_profiling.png)
 *Значительное снижение аллокаций*
 
-![Memory ПОСЛЕ](screenshots/after/after_memory.png)
+![Memory ПОСЛЕ](screenshots/after/memory.png)
 *Минимальное потребление heap (~10 MB)*
+
+![Сборщик мусора ДО](screenshots/after/garbage_collection.png)
+*Потребление сборщика мусора*
 
 ### Устранённые проблемы производительности
 
