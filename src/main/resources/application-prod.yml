@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: andesis
+  webflux:
+  r2dbc:
+    url: r2dbc:postgresql://postgres:5432/andesis
+    username: andesis
+    password: andesis
+    pool:
+      initial-size: 10
+      max-size: 20
+      max-idle-time: 30m
+      max-acquire-time: 1s
+  flyway:
+    url: jdbc:postgresql://postgres:5432/andesis
+    user: andesis
+    password: andesis
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    enabled: true
+    connect-retries: 10
+    connect-retries-interval: 1
+
+server:
+  port: 8080
+  shutdown: graceful
+  compression:
+    enabled: true
+
+logging:
+  level:
+    root: WARN
+    ru.bauman.andesis: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      base-path: /api/actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  webclient:
+    timeout-seconds: 60
+    service-b-url: http://service-b:8081

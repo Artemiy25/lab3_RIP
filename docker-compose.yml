@@ -1,0 +1,118 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: andesis-postgres
+    environment:
+      POSTGRES_DB: andesis
+      POSTGRES_USER: andesis
+      POSTGRES_PASSWORD: andesis
+    ports:
+      - "127.0.0.1:8432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U andesis -d andesis"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - andesis-network
+
+  service-a:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    container_name: andesis-service-a
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_APPLICATION_NAME: andesis-client
+      APP_WEBCLIENT_SERVICE_B_URL: http://service-b:8081
+      APP_WEBCLIENT_TIMEOUT_SECONDS: 60
+    ports:
+      - "127.0.0.1:8080:8080"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-m", "5", "http://localhost:8080/api/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - andesis-network
+    security_opt:
+      - no-new-privileges:true
+
+  service-b:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    container_name: andesis-service-b
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_APPLICATION_NAME: andesis-server
+      SERVER_PORT: "8081"
+      # JFR profiling parameters
+      # BEFORE: filename=/app/logs/before.jfr (для исходного кода)
+      # AFTER:  filename=/app/logs/after.jfr  (для оптимизированного кода)
+      JAVA_OPTS: >-
+        -Xmx2G -Xms1G
+        -XX:+UseG1GC
+        -XX:+UnlockDiagnosticVMOptions
+        -XX:+DebugNonSafepoints
+        -XX:StartFlightRecording=filename=/app/logs/after.jfr,duration=180s,settings=profile
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - ./jfr-logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 3G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-m", "5", "http://localhost:8081/api/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - andesis-network
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_data:
+
+networks:
+  andesis-network:
+    driver: bridge
